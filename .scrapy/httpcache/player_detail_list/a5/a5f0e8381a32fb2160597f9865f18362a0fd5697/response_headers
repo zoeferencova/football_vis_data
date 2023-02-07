@@ -1,0 +1,16 @@
+Server: nginx
+Date: Tue, 07 Feb 2023 09:00:46 GMT
+Content-Type: text/html; charset=UTF-8
+Vary: Accept-Encoding
+X-Host: web06
+X-User: 0
+Set-Cookie: TMSESSID=48c1b166784b90447ea21f478f9c979e; path=/; domain=.transfermarkt.com; secure; HttpOnly; SameSite=lax
+Expires: Tue, 07 Feb 2023 12:00:46 GMT
+Last-Modified: Tue, 07 Feb 2023 08:23:21 GMT
+Pragma: 
+Cache-Control: public, max-age=600, must-revalidate
+X-Frame-Options: DENY
+Permissions-Policy: interest-cohort=()
+Access-Control-Allow-Origin: *
+X-Cache-Status: MISS
+Content-Encoding: gzip
