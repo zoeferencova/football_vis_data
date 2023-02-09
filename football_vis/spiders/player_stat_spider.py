@@ -27,62 +27,50 @@ class PlayerStatSpider(scrapy.Spider):
             '//*[@class="hauptlink"]/table/tr/td[2]/a/@href').extract_first()
 
         if league_url:
+            url_components = league_url.split('/')
+            foreign_player_list = '/' + \
+                url_components[1] + \
+                '/gastarbeiterdetail/wettbewerb/' + url_components[4]
+
             request = scrapy.Request(
-                url='https://www.transfermarkt.com' + league_url,
-                callback=self.parse_league_page,
+                url='https://www.transfermarkt.com' + foreign_player_list,
+                callback=self.parse_list_urls,
                 meta={
                     'item': PlayerStatItem()
                 })
 
             yield request
 
-    def parse_league_page(self, response):
+    def parse_list_urls(self, response):
         item = response.meta['item']
-        player_list_url = response.xpath(
-            "//*[@class='data-header__items']/li[3]/span/a/@href").extract_first()
 
-        years = range(1994, 2023)
+        valid_years = response.xpath(
+            "//*[@name = 'saison_id']/option/@value").extract()[1:]
+        valid_countries = response.xpath(
+            "//*[@name = 'land_id']/option/@value[not(parent::option[@selected])]").extract()[1:]
 
-        season_urls = []
+        gen = (year for year in valid_years if int(year) > 1993)
+        for year in gen:
+            for country_code in valid_countries:
+                player_list_url = response.request.url + \
+                    '?saison_id=' + year + '&land_id=' + country_code
 
-        for year in years:
-            if player_list_url:
-                season_urls.append(f'{player_list_url}/saison_id/{year}')
+                request = scrapy.Request(
+                    url=player_list_url,
+                    callback=self.parse_player_list,
+                    meta={
+                        'item': item
+                    })
 
-        for url in season_urls:
-            request = scrapy.Request(
-                url='https://www.transfermarkt.com' + url,
-                callback=self.parse_foreign_country_list,
-                meta={
-                    'item': item
-                })
-
-            yield request
-
-    def parse_foreign_country_list(self, response):
-        item = response.meta['item']
-        country_links = response.xpath(
-            "//*[contains(@class, 'even') or contains(@class, 'odd')]/td[2]/a/@href").extract()
-
-        country_names = response.xpath(
-            "//*[contains(@class, 'even') or contains(@class, 'odd')]/td[1]/a/text()").extract()
-
-        for i, country in enumerate(country_links):
-            request = scrapy.Request(
-                url='https://www.transfermarkt.com' + country,
-                callback=self.parse_player_list,
-                dont_filter=True,
-                meta={
-                    'citizenship': country_names[i],
-                    'item': item
-                })
-
-            yield request
+                yield request
 
     def parse_player_list(self, response):
         item = response.meta['item']
 
         year = int(re.findall(r'\d{4}', response.request.url)[0]) + 1
+
+        citizenship = response.xpath(
+            "//*[@name = 'land_id']/option[@selected]/text()").extract_first()
 
         import_country = response.xpath(
             "normalize-space(//*[@class = 'data-header__club']/a/text())").extract_first()
@@ -108,7 +96,7 @@ class PlayerStatSpider(scrapy.Spider):
 
             item = response.meta['item']
             item['year'] = year
-            item['citizenship'] = response.meta['citizenship']
+            item['citizenship'] = citizenship
             item['import_country'] = import_country
             item['club'] = player_club
             item['appearances'] = player_appearances
@@ -128,7 +116,6 @@ class PlayerStatSpider(scrapy.Spider):
                 callback=self.parse_player_list,
                 meta={
                     'item': item,
-                    'citizenship': response.meta['citizenship']
                 })
 
             yield request

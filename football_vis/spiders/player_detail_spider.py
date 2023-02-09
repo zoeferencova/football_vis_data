@@ -26,7 +26,7 @@ class PlayerDetailSpider(scrapy.Spider):
         'ITEM_PIPELINES': {'football_vis.pipelines.PlayerImagePipeline': 300},
     }
 
-    f = open('player_stats.json', encoding='utf-8')
+    f = open('../data/player_stats.json', encoding='utf-8')
     data = json.load(f)
 
     url_list = []
